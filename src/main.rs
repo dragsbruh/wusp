@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, CommandFactory, Parser, Subcommand, ValueHint};
+use clap_complete::aot::{Generator, Shell, generate};
 use tungstenite::http;
 
 mod client;
@@ -21,7 +22,7 @@ struct Cli {
 enum Command {
     /// connect to an existing wusp server and bind stdin/stdout with
     Client {
-        #[arg(env = "WUSP_HOST")]
+        #[arg(env = "WUSP_HOST", value_hint = ValueHint::Url)]
         /// url of a running wusp server (must start with ws:// or wss:// protocol)
         host: http::Uri,
 
@@ -32,17 +33,23 @@ enum Command {
 
     /// starts tcp over websocket proxy server
     Server {
-        #[arg(env = "WUSP_ADDRESS")]
+        #[arg(env = "WUSP_ADDRESS", value_hint = ValueHint::Hostname)]
         /// address to bind to and listen on (http)
         address: SocketAddr,
 
-        #[arg(env = "WUSP_TARGET")]
+        #[arg(env = "WUSP_TARGET", value_hint = ValueHint::Hostname)]
         /// target tcp server to proxy requests to
         target: SocketAddr,
 
         #[arg(long, env = "WUSP_AUTH")]
         /// optional authentication string to check for (literal)
         auth: Option<String>,
+    },
+
+    /// generate shell completions
+    Completions {
+        #[arg(action=ArgAction::Set)]
+        shell: Shell,
     },
 }
 
@@ -67,8 +74,22 @@ async fn app() {
             target,
             auth,
         } => server::start_server(address.clone(), target.clone(), auth.clone()).await,
+
+        Command::Completions { shell } => {
+            print_completions(shell, &mut Cli::command());
+            Ok(())
+        }
     };
     if let Err(e) = result {
         eprintln!("fatal error: {}", e);
     }
+}
+
+fn print_completions<G: Generator>(generator: G, cmd: &mut clap::Command) {
+    generate(
+        generator,
+        cmd,
+        cmd.get_name().to_string(),
+        &mut std::io::stdout(),
+    );
 }
