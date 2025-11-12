@@ -17,14 +17,14 @@ then any further websocket messaging is relayed to tcp and vice versa.
 a new tcp connection is opened for every successful websocket connection.
 
 ```sh
-wusp server <address> <target> <auth>
+wusp server <address> <target> --auth <auth>
 ```
 
 example:
 
 ```sh
 # here wusp listens on port 8080 (on http) and proxies requests to ssh on 22, and only allows authorized clients
-wusp server 127.0.0.1:8080 127.0.0.1:22 super_secure_password
+wusp server 127.0.0.1:8080 127.0.0.1:22 --auth super_secure_password
 ```
 
 not passing the auth string will allow any client to connect.
@@ -34,13 +34,13 @@ not passing the auth string will allow any client to connect.
 the client is also really simple and binds stdin/stdout to remote tcp server.
 
 ```sh
-wusp client <host> <auth>
+wusp client <host> --auth <auth>
 ```
 
 example:
 
 ```sh
-wusp client ws://127.0.0.1:8080 super_secure_password
+wusp client ws://127.0.0.1:8080 --auth super_secure_password
 ```
 
 ---
@@ -62,14 +62,14 @@ im using clap so i believe cli arg would take precedence over env var
    for me its cloudflare tunnels or other tunneling provider (cloudflare supports ssh but you need the big bad cloudflare client so its meh)
 
    ```sh
-   ssh -o ProxyCommand="wusp client wss://myserver.com super_secure_password" myserver.com
+   ssh -o ProxyCommand="wusp client wss://myserver.com --auth super_secure_password" myserver.com
    ```
 
    or you can have it in config (~/.ssh/config)
 
    ```plaintext
    Host myserver.com
-       ProxyCommand wusp client wss://myserver.com super_secure_password
+       ProxyCommand wusp client wss://myserver.com --auth super_secure_password
    ```
 
    now you can simply do

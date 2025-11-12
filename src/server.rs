@@ -2,11 +2,19 @@ use std::{net::SocketAddr, sync::Arc};
 
 use anyhow::{Context, Result};
 use futures_util::{SinkExt, StreamExt};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
+
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::{TcpListener, TcpStream},
+};
+
 use tokio_tungstenite::accept_hdr_async;
-use tungstenite::handshake::server::{Request, Response};
-use tungstenite::{Message, http::StatusCode};
+
+use tungstenite::{
+    Message,
+    handshake::server::{Request, Response},
+    http::StatusCode,
+};
 
 pub async fn start_server(
     addy: SocketAddr,
@@ -16,9 +24,13 @@ pub async fn start_server(
     let listener = TcpListener::bind(addy).await.context("bind to address")?;
     let auth = Arc::new(auth);
 
+    eprintln!("[server] listening on {}", addy);
+
     loop {
         let (stream, client_addy) = listener.accept().await?;
         let auth = auth.clone();
+
+        eprintln!("[{}] handling connection request", client_addy);
 
         tokio::spawn(async move {
             if let Err(e) = handle_client(stream, client_addy, target_addy, auth).await {
@@ -56,8 +68,6 @@ pub async fn handle_client(
 
         Ok(response)
     };
-
-    eprintln!("[{}] connection request received", client_addy);
 
     let downstream = accept_hdr_async(stream, callback)
         .await
